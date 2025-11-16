@@ -58,11 +58,11 @@ class Source(Base, UUIDMixin, TimestampMixin):
     )
     
     # Relations
-    publications = relationship(
-        "Publication",
-        back_populates="source_rel",
-        lazy="select"
-    )
+    # publications = relationship(
+    #     "Publication",
+    #     back_populates="source_rel",
+    #     lazy="select"
+    # )
     
     def __repr__(self):
         return f"<Source(id={self.id}, nom='{self.nom}')>"
