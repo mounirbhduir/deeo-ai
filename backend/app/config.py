@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "development"  # development, staging, production
     
+    # ===== PHASE 3 - LOGGING =====
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: Optional[str] = None  # Path to log file (None = stdout only)
+    
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://deeo_user:deeo_password@localhost:5432/deeo_ai"
     DB_ECHO: bool = False

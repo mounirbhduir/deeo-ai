@@ -1,4 +1,4 @@
-﻿"""
+"""
 DEEO.AI - Point d'entrée principal de l'API FastAPI
 """
 from fastapi import FastAPI
@@ -13,9 +13,11 @@ from app.api.v1 import (
     themes_router,
     datasets_router
 )
+from app.phase3_integration import lifespan, integrate_phase3
 
 # Créer application FastAPI
 app = FastAPI(
+    lifespan=lifespan,
     title="DEEO.AI API",
     description="AI Dynamic Emergence and Evolution Observatory",
     version="1.0.0",
@@ -33,6 +35,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Integrate Phase 3
+integrate_phase3(app)
+
 # Inclure routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(publications_router)
@@ -41,7 +46,7 @@ app.include_router(organisations_router)
 app.include_router(themes_router)
 app.include_router(datasets_router)
 
-# Event handlers
+# Event handlers (deprecated, but kept for backward compatibility)
 @app.on_event("startup")
 async def startup_event():
     """Actions au démarrage de l'application"""
