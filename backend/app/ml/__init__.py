@@ -1,9 +1,15 @@
 """
-Module ML pour DEEO.AI Phase 3.
+Machine Learning module for DEEO.AI
 
-Ce module contient les modèles ML:
-- ZeroShotClassifier: Classification zero-shot avec BART
-- Theme Mapping: Mapping thèmes DEEO.AI
+This module provides ML capabilities for classification and embeddings:
+- ZeroShotClassifier: Multi-label classification using BART
+- EmbeddingGenerator: Semantic embeddings using Sentence-Transformers
 """
 
-__all__ = []
+from app.ml.zero_shot_classifier import ZeroShotClassifier
+from app.ml.embedding_generator import EmbeddingGenerator
+
+__all__ = [
+    "ZeroShotClassifier",
+    "EmbeddingGenerator",
+]
