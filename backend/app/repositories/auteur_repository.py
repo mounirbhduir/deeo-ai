@@ -46,7 +46,29 @@ class AuteurRepository(BaseRepository[Auteur]):
             db: Session de base de données asynchrone
         """
         super().__init__(Auteur, db)
-    
+
+    async def get_by_name(self, nom: str, prenom: Optional[str] = None) -> Optional[Auteur]:
+        """
+        Récupère un auteur par nom et prénom.
+
+        Args:
+            nom: Nom de famille de l'auteur
+            prenom: Prénom de l'auteur (optionnel)
+
+        Returns:
+            Auteur si trouvé, None sinon
+        """
+        if prenom:
+            stmt = select(Auteur).where(
+                Auteur.nom == nom,
+                Auteur.prenom == prenom
+            )
+        else:
+            stmt = select(Auteur).where(Auteur.nom == nom)
+
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_by_orcid(self, orcid: str) -> Optional[Auteur]:
         """
         Récupère un auteur par son identifiant ORCID.
