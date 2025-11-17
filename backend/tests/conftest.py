@@ -17,14 +17,6 @@ from app.database import Base, get_db
 from app.config import settings
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create event loop for async tests"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
 TEST_DATABASE_URL = settings.DATABASE_URL.replace("/deeo_ai", "/deeo_ai_test")
 
 test_engine = create_async_engine(

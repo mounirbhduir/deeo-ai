@@ -27,16 +27,6 @@ from app.models.enums import (
 # URL de test (sera configurée via variable d'environnement en production)
 TEST_DATABASE_URL = "postgresql+asyncpg://deeo_user:deeo_secure_password_2025@postgres:5432/deeo_ai_test"
 
-# Configure pytest-asyncio to use auto mode
-@pytest.fixture(scope="session")
-def event_loop():
-    """
-    Create an instance of the default event loop for the test session.
-    """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
 
 @pytest_asyncio.fixture(scope="function")
 async def async_session() -> AsyncGenerator[AsyncSession, None]:

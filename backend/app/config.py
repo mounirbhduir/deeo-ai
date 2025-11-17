@@ -1,44 +1,63 @@
-﻿"""
-Configuration de l'application (variables d'environnement)
 """
-from typing import List
-from pydantic_settings import BaseSettings
+Configuration de l'application DEEO.AI
+
+Utilise Pydantic Settings pour gérer les variables d'environnement.
+"""
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Configuration globale de l'application"""
+    """
+    Configuration de l'application DEEO.AI.
     
-    # Environnement
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    Les variables peuvent être définies dans :
+    - Fichier .env
+    - Variables d'environnement système
+    - Valeurs par défaut ci-dessous
+    """
     
-    # Base de données
-    DATABASE_URL: str
+    # Application
+    APP_NAME: str = "DEEO.AI"
+    APP_VERSION: str = "0.1.0"
+    DEBUG: bool = False
+    ENVIRONMENT: str = "development"  # development, staging, production
+    
+    # Database
+    DATABASE_URL: str = "postgresql+asyncpg://deeo_user:deeo_password@localhost:5432/deeo_ai"
     DB_ECHO: bool = False
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
     
     # Redis
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379"
+    REDIS_TTL_DEFAULT: int = 3600  # 1 hour
     
     # API
     API_V1_PREFIX: str = "/api/v1"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
     
-    # JWT (Phase 2)
-    SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION"
+    # Pagination
+    DEFAULT_PAGE_SIZE: int = 100
+    MAX_PAGE_SIZE: int = 1000
+    
+    # Security (pour Phase 3+)
+    SECRET_KEY: str = "changeme-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Pagination
-    DEFAULT_PAGE_SIZE: int = 20
-    MAX_PAGE_SIZE: int = 100
+    # External APIs (Phase 3)
+    SEMANTIC_SCHOLAR_API_KEY: Optional[str] = None
+    ARXIV_MAX_RESULTS: int = 100
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True
+    )
 
 
+# Instance globale
 settings = Settings()
