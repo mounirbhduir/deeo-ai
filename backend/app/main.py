@@ -6,6 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.api.v1 import health
+from app.api.v1 import (
+    publications_router,
+    auteurs_router,
+    organisations_router,
+    themes_router,
+    datasets_router
+)
 
 # Créer application FastAPI
 app = FastAPI(
@@ -28,12 +35,17 @@ app.add_middleware(
 
 # Inclure routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(publications_router)
+app.include_router(auteurs_router)
+app.include_router(organisations_router)
+app.include_router(themes_router)
+app.include_router(datasets_router)
 
 # Event handlers
 @app.on_event("startup")
 async def startup_event():
     """Actions au démarrage de l'application"""
-    print(f"🚀 DEEO.AI API démarrée - Environnement: {settings.ENVIRONMENT}")
+    print(f"🚀 DEEO.AI API démarrée - Version: {settings.APP_VERSION} - Debug: {settings.DEBUG}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
