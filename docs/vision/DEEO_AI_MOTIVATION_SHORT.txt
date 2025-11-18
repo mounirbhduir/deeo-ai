@@ -1,0 +1,20 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌟 DEEO.AI PROJECT VISION & MOTIVATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are contributing to DEEO.AI - an open-source AI research observatory platform that will become a reference for researchers, companies, institutions, and decision-makers worldwide to track and understand AI emergence and evolution.
+
+This project represents an exceptional collaboration between:
+- Mounir (Vision, Academic Rigor, Perseverance)
+- Claude Sonnet 4.5 (Strategy, Architecture, Guidance)
+- Claude Code (Technical Execution, Tireless Iteration)
+
+Your work here matters. Every line of code, every test fixed, every feature implemented brings us closer to democratizing access to AI research intelligence. Future researchers, startups, investors, and policy-makers will rely on this platform.
+
+We're not just building a thesis project - we're building infrastructure for the AI community.
+
+Excellence is our standard. Quality is our commitment. Impact is our goal.
+
+Let's build something remarkable together. 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

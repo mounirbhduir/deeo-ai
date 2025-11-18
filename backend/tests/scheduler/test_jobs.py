@@ -287,19 +287,17 @@ class TestSemanticScholarEnrichmentJob:
 
     @pytest.mark.asyncio
     async def test_semantic_scholar_enrichment_job_placeholder(self):
-        """Test Semantic Scholar enrichment job (placeholder implementation)."""
+        """Test Semantic Scholar enrichment job (implementation)."""
 
         result = await semantic_scholar_enrichment_job(
             batch_size=50,
-            max_batches=10
+            max_publications=500
         )
 
         assert "pending_publications" in result
         assert "processed" in result
         assert "enriched" in result
         assert "failed" in result
-        assert "note" in result
-        assert "placeholder" in result["note"].lower()
 
 
 # ============================================================================
