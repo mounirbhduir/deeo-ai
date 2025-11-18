@@ -152,7 +152,7 @@ class TestArxivCollector:
         import xml.etree.ElementTree as ET
 
         root = ET.fromstring(MOCK_ARXIV_RESPONSE)
-        entry = root.find('entry', collector.NAMESPACES)
+        entry = root.find('atom:entry', collector.NAMESPACES)
 
         result = collector._parse_entry(entry)
 

@@ -3,6 +3,8 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, date
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
 from app.pipelines.arxiv_pipeline import ArxivPipeline, ArxivPipelineStats
 from app.models.publication import Publication
@@ -217,9 +219,8 @@ class TestArxivPipeline:
             'nom': 'Smith',
             'prenom': 'John',
             'email': None,
-            'affiliations': None,
             'h_index': None,
-            'url_profile': None,
+            'homepage_url': None,
         }
 
         async with pipeline:
@@ -240,9 +241,8 @@ class TestArxivPipeline:
             'nom': 'Smith',
             'prenom': 'John',
             'email': None,
-            'affiliations': None,
             'h_index': None,
-            'url_profile': None,
+            'homepage_url': None,
         }
 
         async with pipeline:
@@ -312,15 +312,20 @@ class TestArxivPipeline:
         await async_session.flush()
 
         authors_data = [
-            {'nom': 'Smith', 'prenom': 'John', 'email': None, 'affiliations': None, 'h_index': None, 'url_profile': None},
-            {'nom': 'Doe', 'prenom': 'Jane', 'email': None, 'affiliations': None, 'h_index': None, 'url_profile': None},
+            {'nom': 'Smith', 'prenom': 'John', 'email': None, 'h_index': None, 'homepage_url': None},
+            {'nom': 'Doe', 'prenom': 'Jane', 'email': None, 'h_index': None, 'homepage_url': None},
         ]
 
         async with pipeline:
             await pipeline._handle_authors(publication, authors_data)
 
         # Verify relationships were created
-        await async_session.refresh(publication)
+        result = await async_session.execute(
+            select(Publication)
+            .where(Publication.id == publication.id)
+            .options(selectinload(Publication.auteurs))
+        )
+        publication = result.scalar_one()
         assert len(publication.auteurs) == 2
 
     async def test_handle_themes(self, pipeline, async_session):
@@ -335,5 +340,10 @@ class TestArxivPipeline:
             await pipeline._handle_themes(publication, theme_names)
 
         # Verify relationships were created
-        await async_session.refresh(publication)
+        result = await async_session.execute(
+            select(Publication)
+            .where(Publication.id == publication.id)
+            .options(selectinload(Publication.themes))
+        )
+        publication = result.scalar_one()
         assert len(publication.themes) == 2

@@ -74,7 +74,6 @@ class ArxivToPublicationMapper:
                 'status': 'pending_enrichment',
                 'url': f"https://arxiv.org/abs/{arxiv_paper['id']}" if arxiv_paper.get('id') else None,
                 'nombre_citations': 0,
-                'score_pertinence': 0.0,
             }
 
             logger.debug(
@@ -126,9 +125,8 @@ class ArxivToAuteurMapper:
                 'nom': nom,
                 'prenom': prenom,
                 'email': None,
-                'affiliations': None,
                 'h_index': None,
-                'url_profile': None,
+                'homepage_url': None,
             }
 
             logger.debug(

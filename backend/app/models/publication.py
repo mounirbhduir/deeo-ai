@@ -187,6 +187,29 @@ class Publication(Base, UUIDMixin, TimestampMixin):
         back_populates="publication",
         lazy="select"
     )
-    
+
+    def __init__(self, **kwargs):
+        """Initialize Publication with empty collections."""
+        super().__init__(**kwargs)
+        # Initialize relationship collections as empty lists
+        if not hasattr(self, 'auteurs') or self.auteurs is None:
+            self.auteurs = []
+        if not hasattr(self, 'themes') or self.themes is None:
+            self.themes = []
+        if not hasattr(self, 'technologies') or self.technologies is None:
+            self.technologies = []
+        if not hasattr(self, 'datasets') or self.datasets is None:
+            self.datasets = []
+        if not hasattr(self, 'outils') or self.outils is None:
+            self.outils = []
+        if not hasattr(self, 'citations_sources') or self.citations_sources is None:
+            self.citations_sources = []
+        if not hasattr(self, 'citations_cibles') or self.citations_cibles is None:
+            self.citations_cibles = []
+        if not hasattr(self, 'impacts') or self.impacts is None:
+            self.impacts = []
+        if not hasattr(self, 'metriques') or self.metriques is None:
+            self.metriques = []
+
     def __repr__(self):
         return f"<Publication(id={self.id}, titre='{self.titre[:50]}...', status='{self.status.value}')>"

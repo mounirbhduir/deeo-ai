@@ -33,7 +33,6 @@ class TestArxivToPublicationMapper:
         assert result['source_nom'] == 'arXiv'
         assert result['status'] == 'pending_enrichment'
         assert result['nombre_citations'] == 0
-        assert result['score_pertinence'] == 0.0
         assert isinstance(result['date_publication'], datetime)
 
     def test_map_without_doi(self):
@@ -100,7 +99,8 @@ class TestArxivToAuteurMapper:
         assert result['prenom'] == 'John David'
         assert result['nom'] == 'Smith'
         assert result['email'] is None
-        assert result['affiliations'] is None
+        assert result['h_index'] is None
+        assert result['homepage_url'] is None
 
     def test_map_single_name(self):
         """Test mapping single name."""
@@ -223,7 +223,7 @@ class TestArxivCategoryMapper:
 
     def test_extract_themes_no_match(self):
         """Test extracting themes with no matches."""
-        text = 'Some random text without keywords'
+        text = 'Some random content without any matching keywords'
 
         themes = ArxivCategoryMapper.extract_themes_from_text(text)
 
