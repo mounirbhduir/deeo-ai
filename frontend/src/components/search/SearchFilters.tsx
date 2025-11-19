@@ -4,10 +4,11 @@
  * Advanced filters for publication search (type, theme, dates, sort).
  */
 
-import { ChangeEvent } from 'react'
+import { ChangeEvent, useMemo } from 'react'
 import { Select } from '../common/Select'
 import { Input } from '../common/Input'
 import { Button } from '../common/Button'
+import { useThemes } from '@/hooks/useThemes'
 import type { PublicationSearchParams } from '@/types/publication'
 
 interface SearchFiltersProps {
@@ -25,17 +26,6 @@ const PUBLICATION_TYPES = [
   { value: 'thesis', label: 'Thèse' },
 ]
 
-const THEMES = [
-  { value: '', label: 'Tous les thèmes' },
-  { value: 'Machine Learning', label: 'Machine Learning' },
-  { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-  { value: 'Computer Vision', label: 'Computer Vision' },
-  { value: 'Reinforcement Learning', label: 'Reinforcement Learning' },
-  { value: 'Deep Learning', label: 'Deep Learning' },
-  { value: 'Graph Neural Networks', label: 'Graph Neural Networks' },
-  { value: 'Generative AI', label: 'Generative AI' },
-]
-
 const SORT_OPTIONS = [
   { value: 'date', label: 'Date de publication' },
   { value: 'citations', label: 'Nombre de citations' },
@@ -47,6 +37,26 @@ export const SearchFilters = ({
   onFilterChange,
   onReset,
 }: SearchFiltersProps) => {
+  // Fetch themes dynamically from API
+  const { data: themesData } = useThemes({
+    sort: '-nombre_publications',
+    limit: 100,
+  })
+
+  // Build theme options from API data (ID as value, label as display)
+  const themeOptions = useMemo(() => {
+    const options = [{ value: '', label: 'Tous les thèmes' }]
+    if (themesData) {
+      themesData.forEach(theme => {
+        options.push({
+          value: theme.id, // Use theme ID as value (this is what backend expects)
+          label: theme.label, // Use theme label for display
+        })
+      })
+    }
+    return options
+  }, [themesData])
+
   const handleChange = (key: keyof PublicationSearchParams, value: string) => {
     onFilterChange({ [key]: value || undefined })
   }
@@ -91,7 +101,7 @@ export const SearchFilters = ({
             onChange={(e: ChangeEvent<HTMLSelectElement>) =>
               handleChange('theme', e.target.value)
             }
-            options={THEMES}
+            options={themeOptions}
           />
         </div>
 
