@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { PublicationCard } from '@/components/search/PublicationCard'
+import { PublicationModal } from '@/components/search/PublicationModal'
 import { Select } from '@/components/common/Select'
 import { Input } from '@/components/common/Input'
+import { publicationsApi } from '@/api/publications'
 import type { PublicationDetailed } from '@/types/publication'
 
 interface OrganisationPublicationsProps {
@@ -12,6 +14,8 @@ export const OrganisationPublications = ({ publications }: OrganisationPublicati
   const [sortBy, setSortBy] = useState<'date' | 'citations'>('date')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTheme, setFilterTheme] = useState<string>('')
+  const [selectedPublication, setSelectedPublication] = useState<PublicationDetailed | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const themes = Array.from(new Set(publications.flatMap(p => p.themes.map(t => t.label)))).sort()
 
@@ -85,15 +89,30 @@ export const OrganisationPublications = ({ publications }: OrganisationPublicati
               <PublicationCard
                 key={publication.id}
                 publication={publication}
-                onViewDetails={() => {
-                  // Navigate to publication details page (future implementation)
-                  console.log('View publication:', publication.id)
+                onViewDetails={async () => {
+                  try {
+                    const fullPublication = await publicationsApi.getById(publication.id)
+                    setSelectedPublication(fullPublication)
+                    setModalOpen(true)
+                  } catch (err) {
+                    console.error('Error loading publication details:', err)
+                  }
                 }}
               />
             ))}
           </div>
         </>
       )}
+
+      {/* Publication Details Modal */}
+      <PublicationModal
+        publication={selectedPublication}
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          setSelectedPublication(null)
+        }}
+      />
     </div>
   )
 }
