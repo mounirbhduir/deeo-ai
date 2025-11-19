@@ -104,10 +104,11 @@ export const GraphsPage = () => {
                     value={String(minCollaborations)}
                     onChange={(e) => setMinCollaborations(parseInt(e.target.value))}
                     options={[
-                      { value: '1', label: '1+' },
-                      { value: '2', label: '2+' },
-                      { value: '3', label: '3+' },
-                      { value: '5', label: '5+' },
+                      { value: '1', label: '1+ collaborations' },
+                      { value: '2', label: '2+ collaborations' },
+                      { value: '3', label: '3+ collaborations' },
+                      { value: '4', label: '4+ collaborations' },
+                      { value: '5', label: '5+ collaborations' },
                     ]}
                   />
                 </div>
@@ -149,7 +150,10 @@ export const GraphsPage = () => {
                   </span>
                 </p>
               </div>
-              <NetworkGraph data={graphData} />
+              <NetworkGraph
+                data={graphData}
+                key={`graph-${minCollaborations}`}
+              />
             </Card>
           </div>
         </div>
