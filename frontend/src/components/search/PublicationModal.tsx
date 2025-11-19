@@ -7,6 +7,7 @@
 import { Modal } from '../common/Modal'
 import { Badge } from '../common/Badge'
 import { Button } from '../common/Button'
+import { ExternalLink } from '../common/ExternalLink'
 import type { PublicationDetailed } from '@/types/publication'
 
 interface PublicationModalProps {
@@ -53,20 +54,30 @@ export const PublicationModal = ({
               {publication.nombre_citations}
             </span>
           </div>
-          {publication.doi && (
-            <div>
-              <span className="font-medium text-gray-700">DOI:</span>
-              <a
-                href={`https://doi.org/${publication.doi}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 text-indigo-600 hover:underline"
-              >
-                {publication.doi}
-              </a>
-            </div>
-          )}
         </div>
+
+        {/* External Resources */}
+        {(publication.doi || publication.arxiv_id) && (
+          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">External Resources</h4>
+
+            {publication.doi && (
+              <ExternalLink
+                href={`https://doi.org/${publication.doi}`}
+                label="DOI"
+                value={publication.doi}
+              />
+            )}
+
+            {publication.arxiv_id && (
+              <ExternalLink
+                href={`https://arxiv.org/abs/${publication.arxiv_id}`}
+                label="arXiv"
+                value={publication.arxiv_id}
+              />
+            )}
+          </div>
+        )}
 
         {/* Authors */}
         <div>
@@ -114,32 +125,6 @@ export const PublicationModal = ({
           </p>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-4 border-t border-gray-200">
-          {publication.arxiv_id && (
-            <Button
-              variant="primary"
-              onClick={() =>
-                window.open(
-                  `https://arxiv.org/abs/${publication.arxiv_id}`,
-                  '_blank'
-                )
-              }
-            >
-              Voir sur arXiv
-            </Button>
-          )}
-          {publication.doi && (
-            <Button
-              variant="secondary"
-              onClick={() =>
-                window.open(`https://doi.org/${publication.doi}`, '_blank')
-              }
-            >
-              Voir DOI
-            </Button>
-          )}
-        </div>
       </div>
     </Modal>
   )
