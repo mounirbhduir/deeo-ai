@@ -7,30 +7,49 @@ import { BarChart } from '@/components/charts/BarChart'
 import { PieChart } from '@/components/charts/PieChart'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { Alert } from '@/components/common/Alert'
-import { useStatistics } from '@/hooks/useStatistics'
-import { usePublications } from '@/hooks/usePublications'
-import { useAuteurs } from '@/hooks/useAuteurs'
+import { publicationsApi } from '@/api/publications'
+import { authorsApi } from '@/api/authors'
+import { useQuery } from '@tanstack/react-query'
 import { useThemes } from '@/hooks/useThemes'
-import type { Publication, Auteur, Theme } from '@/types/api'
+import type { PublicationDetailed, PublicationSearchResponse } from '@/types/publication'
+import type { AuthorListItem, AuthorSearchResponse } from '@/types/author'
+import type { Theme } from '@/types/api'
 
 export default function Dashboard() {
-  // Fetch ALL data from API - same sources as other pages for consistency
-  const { data: publicationsData, isLoading: pubsLoading } = usePublications({
-    page_size: 1000, // Fetch more to get accurate totals
-    sort: '-date_publication',
-  })
-  const { data: auteursData, isLoading: auteursLoading } = useAuteurs({
-    sort: '-h_index',
-    limit: 1000, // Fetch all authors for accurate total
-  })
-  const { data: themes, isLoading: themesLoading } = useThemes({
-    sort: '-nombre_publications',
-    limit: 100, // Fetch all themes
+  // Use SAME API endpoints as search pages for consistency
+  // PublicationsSearch uses publicationsApi.search() → /publications/search
+  const { data: publicationsData, isLoading: pubsLoading } = useQuery<PublicationSearchResponse>({
+    queryKey: ['publications-dashboard'],
+    queryFn: () => publicationsApi.search({
+      page: 1,
+      limit: 100,  // Fetch enough for charts
+      sort_by: 'date',
+      sort_order: 'desc'
+    }),
+    staleTime: 1000 * 30,
   })
 
-  // Calculate totals directly from data (same as other pages)
-  const totalPublications = publicationsData?.total || publicationsData?.items?.length || 0
-  const totalAuteurs = auteursData?.total || auteursData?.length || 0
+  // AuthorsList uses authorsApi.getAll() → /authors
+  const { data: auteursData, isLoading: auteursLoading } = useQuery<AuthorSearchResponse>({
+    queryKey: ['authors-dashboard'],
+    queryFn: () => authorsApi.getAll({
+      page: 1,
+      limit: 20,  // Fetch top 20 for bar chart
+      sort_by: 'h_index',
+      order: 'desc'
+    }),
+    staleTime: 1000 * 30,
+  })
+
+  // ThemesPage uses useThemes
+  const { data: themes, isLoading: themesLoading } = useThemes({
+    sort: '-nombre_publications',
+    limit: 100,
+  })
+
+  // Get totals from API responses (EXACTLY as search pages do)
+  const totalPublications = publicationsData?.total || 0
+  const totalAuteurs = auteursData?.total || 0
   const totalThemes = themes?.length || 0
 
   // Calculate recent publications (last 7 days)
@@ -82,7 +101,7 @@ export default function Dashboard() {
 
   // Prepare Bar Chart data (top 10 authors by h-index)
   const barChartData = useMemo(() => {
-    return prepareBarChartData(auteursData || [])
+    return prepareBarChartData(auteursData?.items || [])
   }, [auteursData])
 
   // Prepare Pie Chart data (top 5 themes)
@@ -144,7 +163,7 @@ export default function Dashboard() {
 /**
  * Prepare data for Line Chart (publications by month - last 12 months)
  */
-function prepareLineChartData(publications: Publication[]) {
+function prepareLineChartData(publications: PublicationDetailed[]) {
   const now = new Date()
   const monthsMap = new Map<string, number>()
 
@@ -173,7 +192,7 @@ function prepareLineChartData(publications: Publication[]) {
 /**
  * Prepare data for Bar Chart (top authors by h-index)
  */
-function prepareBarChartData(auteurs: Auteur[]) {
+function prepareBarChartData(auteurs: AuthorListItem[]) {
   return auteurs.slice(0, 10).map((auteur) => ({
     name: `${auteur.prenom} ${auteur.nom}`.substring(0, 20),
     value: auteur.h_index,
@@ -193,7 +212,7 @@ function preparePieChartData(themes: Theme[]) {
 /**
  * Prepare data for Area Chart (temporal trends - last 6 months)
  */
-function prepareAreaChartData(publications: Publication[]) {
+function prepareAreaChartData(publications: PublicationDetailed[]) {
   const now = new Date()
   const monthsMap = new Map<string, number>()
 
