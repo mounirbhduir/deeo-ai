@@ -5,12 +5,16 @@
  * Reuses PublicationCard from Step 5 for consistent display.
  */
 
+import { useState } from 'react'
 import { useAuthorPublications } from '@/hooks/useAuthorPublications'
 import { PublicationCard } from '@/components/search/PublicationCard'
+import { PublicationModal } from '@/components/search/PublicationModal'
 import { Pagination } from '@/components/common/Pagination'
 import { Loader } from '@/components/common/Loader'
 import { Alert } from '@/components/common/Alert'
 import { BookOpen } from 'lucide-react'
+import { publicationsApi } from '@/api/publications'
+import type { PublicationDetailed } from '@/types/publication'
 
 interface AuthorPublicationsProps {
   authorId: string
@@ -19,6 +23,10 @@ interface AuthorPublicationsProps {
 export const AuthorPublications = ({ authorId }: AuthorPublicationsProps) => {
   const { data, isLoading, isError, error, queryParams, updateParams } =
     useAuthorPublications(authorId)
+
+  const [selectedPublication, setSelectedPublication] =
+    useState<PublicationDetailed | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   // Extract unique years, types, themes from data for filters
   const availableYears = data?.items
@@ -170,9 +178,14 @@ export const AuthorPublications = ({ authorId }: AuthorPublicationsProps) => {
           <PublicationCard
             key={publication.id}
             publication={publication}
-            onViewDetails={() => {
-              // TODO: Implement publication detail modal
-              console.log('View publication:', publication.id)
+            onViewDetails={async () => {
+              try {
+                const fullPublication = await publicationsApi.getById(publication.id)
+                setSelectedPublication(fullPublication)
+                setModalOpen(true)
+              } catch (err) {
+                console.error('Error loading publication details:', err)
+              }
             }}
           />
         ))}
@@ -188,6 +201,16 @@ export const AuthorPublications = ({ authorId }: AuthorPublicationsProps) => {
           />
         </div>
       )}
+
+      {/* Publication Details Modal */}
+      <PublicationModal
+        publication={selectedPublication}
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          setSelectedPublication(null)
+        }}
+      />
     </div>
   )
 }
