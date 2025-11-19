@@ -19,20 +19,20 @@ export const OrganisationCharts = ({ statistics }: { statistics: OrganisationSta
   }, [statistics.publications_by_theme])
 
   const topAuthorsData = useMemo(() => {
-    // Take top 8 researchers and format names for better display
+    // Take top 10 researchers sorted by h-index (descending)
     return statistics.top_authors
-      .slice(0, 8)
+      .slice(0, 10)
       .map(a => {
         const fullName = `${a.prenom} ${a.nom}`
-        // Truncate name if too long (keep first 20 chars)
-        const displayName = fullName.length > 20 ? fullName.substring(0, 18) + '...' : fullName
+        // Shorten name for X-axis display (first name initial + last name)
+        const displayName = `${a.prenom.charAt(0)}. ${a.nom}`
         return {
           name: displayName,
           fullName: fullName, // Keep full name for tooltip
           h_index: a.h_index
         }
       })
-      .reverse() // Reverse so highest h-index appears at top
+      .sort((a, b) => b.h_index - a.h_index) // Sort descending by h-index
   }, [statistics.top_authors])
 
   return (
@@ -70,25 +70,30 @@ export const OrganisationCharts = ({ statistics }: { statistics: OrganisationSta
       <Card>
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Researchers (h-index)</h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={380}>
             <BarChart
               data={topAuthorsData}
-              layout="horizontal"
-              margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis
-                type="number"
+                dataKey="name"
                 stroke="#6B7280"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-                label={{ value: 'H-Index', position: 'insideBottom', offset: -5, style: { fill: '#6B7280', fontSize: 12 } }}
+                tick={{ fill: '#374151', fontSize: 11, fontWeight: 500 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
               />
               <YAxis
-                dataKey="name"
-                type="category"
-                width={140}
                 stroke="#6B7280"
-                tick={{ fill: '#374151', fontSize: 12, fontWeight: 500 }}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                label={{
+                  value: 'H-Index',
+                  angle: -90,
+                  position: 'insideLeft',
+                  style: { fill: '#6B7280', fontSize: 12, fontWeight: 600 }
+                }}
               />
               <Tooltip
                 cursor={{ fill: 'rgba(79, 70, 229, 0.1)' }}
@@ -96,18 +101,23 @@ export const OrganisationCharts = ({ statistics }: { statistics: OrganisationSta
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E5E7EB',
                   borderRadius: '6px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  padding: '8px 12px'
                 }}
                 formatter={(value: number, name: string, props: any) => [
-                  `H-Index: ${value}`,
-                  props.payload.fullName
+                  value,
+                  'H-Index'
                 ]}
+                labelFormatter={(label: string) => {
+                  const item = topAuthorsData.find(d => d.name === label)
+                  return item ? item.fullName : label
+                }}
               />
               <Bar
                 dataKey="h_index"
                 fill="#7C3AED"
-                radius={[0, 4, 4, 0]}
-                barSize={28}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={60}
               />
             </BarChart>
           </ResponsiveContainer>
