@@ -4,7 +4,7 @@ Pydantic schemas for Theme entity.
 This module defines the validation schemas for API requests and responses.
 '''
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -23,7 +23,7 @@ class ThemeBase(BaseModel):
     # Champs optionnels
     description: Optional[str] = Field(None, description='Description of the theme')
     niveau_hierarchie: int = Field(default=0, ge=0, le=10, description='Hierarchy level (0 = root)')
-    parent_id: Optional[UUID] = Field(None, description='Parent theme ID (NULL = root theme)')
+    parent_id: Optional[Union[UUID, str]] = Field(None, description='Parent theme ID (NULL = root theme)')
     chemin_hierarchie: Optional[str] = Field(None, description='Full hierarchical path (e.g., "AI/ML/Deep Learning")')
     nombre_publications: int = Field(default=0, ge=0, description='Number of associated publications')
 
@@ -70,7 +70,7 @@ class ThemeUpdate(BaseModel):
     label: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     niveau_hierarchie: Optional[int] = Field(None, ge=0, le=10)
-    parent_id: Optional[UUID] = None
+    parent_id: Optional[Union[UUID, str]] = None
     chemin_hierarchie: Optional[str] = None
     nombre_publications: Optional[int] = Field(None, ge=0)
 
@@ -86,9 +86,9 @@ class ThemeResponse(ThemeBase):
     Used in GET endpoints.
     '''
 
-    id: UUID = Field(..., description='Unique identifier')
-    created_at: datetime = Field(..., description='Creation timestamp')
-    updated_at: datetime = Field(..., description='Last update timestamp')
+    id: Union[UUID, str] = Field(..., description='Unique identifier')
+    created_at: Union[datetime, str] = Field(..., description='Creation timestamp')
+    updated_at: Union[datetime, str] = Field(..., description='Last update timestamp')
 
     # Configuration Pydantic v2
     model_config = ConfigDict(
