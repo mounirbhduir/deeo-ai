@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, Search } from 'lucide-react'
 import { Logo } from '@/components/common/Logo'
 import { Button } from '@/components/common/Button'
@@ -14,8 +14,13 @@ const navItems = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path: string) => location.pathname === path
+
+  const handleSearchClick = () => {
+    navigate('/publications/search')
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -48,7 +53,12 @@ export function Header() {
 
           {/* Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSearchClick}
+              aria-label="Search publications"
+            >
               <Search className="h-4 w-4" />
             </Button>
           </div>
