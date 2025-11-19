@@ -11,8 +11,13 @@ from app.api.v1 import (
     auteurs_router,
     organisations_router,
     themes_router,
-    datasets_router
+    datasets_router,
+    statistics_router
 )
+from app.api.v1.publications_search_mock import router as publications_search_router
+from app.api.v1.authors_mock import router as authors_mock_router
+from app.api.v1.organisations_mock import router as organisations_mock_router
+from app.api.v1.graphs_mock import router as graphs_mock_router
 from app.phase3_integration import lifespan, integrate_phase3
 
 # Créer application FastAPI
@@ -39,7 +44,14 @@ app.add_middleware(
 integrate_phase3(app)
 
 # Inclure routers
+# IMPORTANT: Search router MUST come BEFORE publications_router
+# to avoid /search being matched by /{publication_id}
 app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(statistics_router)
+app.include_router(publications_search_router, prefix="/api/v1/publications", tags=["publications-search"])
+app.include_router(authors_mock_router, prefix="/api/v1/authors", tags=["authors-mock"])
+app.include_router(organisations_mock_router, prefix="/api/v1/organisations", tags=["organisations-mock"])
+app.include_router(graphs_mock_router, prefix="/api/v1/graphs", tags=["graphs-mock"])
 app.include_router(publications_router)
 app.include_router(auteurs_router)
 app.include_router(organisations_router)

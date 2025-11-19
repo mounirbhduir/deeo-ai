@@ -9,6 +9,7 @@ from app.api.v1.auteurs import router as auteurs_router
 from app.api.v1.organisations import router as organisations_router
 from app.api.v1.themes import router as themes_router
 from app.api.v1.datasets import router as datasets_router
+from app.api.v1.statistics import router as statistics_router
 
 __all__ = [
     'publications_router',
@@ -16,4 +17,5 @@ __all__ = [
     'organisations_router',
     'themes_router',
     'datasets_router',
+    'statistics_router',
 ]

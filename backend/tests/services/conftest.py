@@ -27,7 +27,7 @@ def sample_publication_data():
         "titre": "Test Publication",
         "abstract": "This is a test abstract",
         "doi": "10.1234/test.2024.001",
-        "arxiv_id": "2024.12345",
+        "arxiv_id": "2401.12345",  # Valid arXiv format: YYMM.NNNNN (Jan 2024)
         "date_publication": datetime(2024, 1, 1),
         "type_publication": "article",
         "status": "pending_enrichment"
@@ -41,7 +41,7 @@ def sample_publication():
         titre="Test Publication",
         abstract="This is a test abstract",
         doi="10.1234/test.2024.001",
-        arxiv_id="2024.12345",
+        arxiv_id="2401.12345",  # Valid arXiv format: YYMM.NNNNN (Jan 2024)
         date_publication=datetime(2024, 1, 1),
         type_publication="article",
         status="pending_enrichment",

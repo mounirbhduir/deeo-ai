@@ -88,7 +88,7 @@ async def test_get_by_status(
     for i in range(3):
         data = publication_data.copy()
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         data["status"] = StatusPublicationEnum.PUBLISHED
         await repository.create(data)
     
@@ -96,7 +96,7 @@ async def test_get_by_status(
     for i in range(3, 5):
         data = publication_data.copy()
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         data["status"] = StatusPublicationEnum.PENDING_ENRICHMENT
         await repository.create(data)
     
@@ -131,7 +131,7 @@ async def test_search_by_titre(
         data = publication_data.copy()
         data["titre"] = title
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         await repository.create(data)
     
     # Act
@@ -205,7 +205,7 @@ async def test_get_recent(
         data = publication_data.copy()
         data["date_publication"] = pub_date
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         await repository.create(data)
     
     # Act
@@ -234,7 +234,7 @@ async def test_get_recent_with_limit(
         data = publication_data.copy()
         data["date_publication"] = date(2024, 1, i + 1)
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         await repository.create(data)
     
     # Act
@@ -257,7 +257,7 @@ async def test_count_by_status(
     for i in range(3):
         data = publication_data.copy()
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         data["status"] = StatusPublicationEnum.PUBLISHED
         await repository.create(data)
     
@@ -265,7 +265,7 @@ async def test_count_by_status(
     for i in range(3, 5):
         data = publication_data.copy()
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"
         data["status"] = StatusPublicationEnum.PENDING_ENRICHMENT
         await repository.create(data)
     

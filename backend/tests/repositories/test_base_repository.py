@@ -88,7 +88,7 @@ async def test_get_multi_with_pagination(
         data = publication_data.copy()
         data["titre"] = f"Publication {i}"
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"  # Valid arXiv format: YYMM.NNNNN
         await repository.create(data)
     
     # Act - Page 1 (2 premiers)
@@ -204,7 +204,7 @@ async def test_count(async_session: AsyncSession, publication_data: dict):
     for i in range(3):
         data = publication_data.copy()
         data["doi"] = f"10.1234/test.{i}"
-        data["arxiv_id"] = f"2024.{i:05d}"
+        data["arxiv_id"] = f"2401.{10000+i:05d}"  # Valid arXiv format: YYMM.NNNNN
         await repository.create(data)
     
     # Act
