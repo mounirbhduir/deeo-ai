@@ -51,13 +51,13 @@ ORGANIZATIONS = [
 ]
 
 THEMES_DATA = [
-    {"id": "theme-ml", "label": "Machine Learning"},
-    {"id": "theme-nlp", "label": "Natural Language Processing"},
-    {"id": "theme-cv", "label": "Computer Vision"},
-    {"id": "theme-rl", "label": "Reinforcement Learning"},
-    {"id": "theme-dl", "label": "Deep Learning"},
-    {"id": "theme-gnn", "label": "Graph Neural Networks"},
-    {"id": "theme-genai", "label": "Generative AI"},
+    {"id": "theme-1", "label": "Machine Learning"},
+    {"id": "theme-2", "label": "Natural Language Processing"},
+    {"id": "theme-3", "label": "Computer Vision"},
+    {"id": "theme-5", "label": "Reinforcement Learning"},
+    {"id": "theme-7", "label": "Explainable AI"},
+    {"id": "theme-8", "label": "Deep Learning"},
+    {"id": "theme-13", "label": "Generative AI"},
 ]
 
 PUBLICATION_TYPES = ["article", "preprint", "conference_paper", "journal_paper", "thesis"]
