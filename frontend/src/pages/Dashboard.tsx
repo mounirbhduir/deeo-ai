@@ -14,50 +14,65 @@ import { useThemes } from '@/hooks/useThemes'
 import type { Publication, Auteur, Theme } from '@/types/api'
 
 export default function Dashboard() {
-  // Fetch data from API
-  const { data: stats, isLoading: statsLoading, isError: statsError } = useStatistics()
+  // Fetch ALL data from API - same sources as other pages for consistency
   const { data: publicationsData, isLoading: pubsLoading } = usePublications({
-    page_size: 100,
+    page_size: 1000, // Fetch more to get accurate totals
     sort: '-date_publication',
   })
-  const { data: auteurs, isLoading: auteursLoading } = useAuteurs({
+  const { data: auteursData, isLoading: auteursLoading } = useAuteurs({
     sort: '-h_index',
-    limit: 10,
+    limit: 1000, // Fetch all authors for accurate total
   })
   const { data: themes, isLoading: themesLoading } = useThemes({
     sort: '-nombre_publications',
-    limit: 5,
+    limit: 100, // Fetch all themes
   })
 
-  // Prepare KPIs data
+  // Calculate totals directly from data (same as other pages)
+  const totalPublications = publicationsData?.total || publicationsData?.items?.length || 0
+  const totalAuteurs = auteursData?.total || auteursData?.length || 0
+  const totalThemes = themes?.length || 0
+
+  // Calculate recent publications (last 7 days)
+  const publicationsLast7Days = useMemo(() => {
+    if (!publicationsData?.items) return 0
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return publicationsData.items.filter((pub) => {
+      const pubDate = new Date(pub.date_publication)
+      return pubDate >= sevenDaysAgo
+    }).length
+  }, [publicationsData])
+
+  // Prepare KPIs data - using real totals from same hooks as other pages
   const kpis = useMemo(
     () => [
       {
         title: 'Publications totales',
-        value: stats?.total_publications || 0,
+        value: totalPublications,
         icon: <FileText className="w-6 h-6" />,
         trend: { value: 12.5, isPositive: true },
       },
       {
         title: 'Auteurs totaux',
-        value: stats?.total_auteurs || 0,
+        value: totalAuteurs,
         icon: <Users className="w-6 h-6" />,
         trend: { value: 8.3, isPositive: true },
       },
       {
-        title: 'Organisations totales',
-        value: stats?.total_organisations || 0,
+        title: 'Thèmes',
+        value: totalThemes,
         icon: <Building2 className="w-6 h-6" />,
         trend: { value: 5.1, isPositive: true },
       },
       {
-        title: 'Publications récentes',
-        value: stats?.publications_last_7_days || 0,
+        title: 'Publications récentes (7j)',
+        value: publicationsLast7Days,
         icon: <TrendingUp className="w-6 h-6" />,
         trend: { value: 15.7, isPositive: true },
       },
     ],
-    [stats]
+    [totalPublications, totalAuteurs, totalThemes, publicationsLast7Days]
   )
 
   // Prepare Line Chart data (publications by month - last 12 months)
@@ -67,8 +82,8 @@ export default function Dashboard() {
 
   // Prepare Bar Chart data (top 10 authors by h-index)
   const barChartData = useMemo(() => {
-    return prepareBarChartData(auteurs || [])
-  }, [auteurs])
+    return prepareBarChartData(auteursData || [])
+  }, [auteursData])
 
   // Prepare Pie Chart data (top 5 themes)
   const pieChartData = useMemo(() => {
@@ -93,16 +108,8 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Error Alert */}
-        {statsError && (
-          <Alert variant="error" title="Erreur de chargement">
-            Impossible de récupérer les statistiques. Vérifiez que le backend
-            est démarré.
-          </Alert>
-        )}
-
         {/* KPIs Grid */}
-        <StatsGrid kpis={kpis} isLoading={statsLoading} />
+        <StatsGrid kpis={kpis} isLoading={pubsLoading || auteursLoading} />
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
