@@ -17,7 +17,7 @@ export const OrganisationPublications = ({ publications }: OrganisationPublicati
   const [selectedPublication, setSelectedPublication] = useState<PublicationDetailed | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
-  const themes = Array.from(new Set(publications.flatMap(p => p.themes.map(t => t.label)))).sort()
+  const themes = Array.from(new Set(publications.flatMap(p => (p.themes || []).map(t => t.label)))).sort()
 
   const filteredAndSortedPublications = publications
     .filter(pub => {
@@ -28,7 +28,7 @@ export const OrganisationPublications = ({ publications }: OrganisationPublicati
           return false
         }
       }
-      if (filterTheme && !pub.themes.some(t => t.label === filterTheme)) {
+      if (filterTheme && !(pub.themes || []).some(t => t.label === filterTheme)) {
         return false
       }
       return true

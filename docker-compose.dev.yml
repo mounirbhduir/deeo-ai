@@ -1,0 +1,171 @@
+# ==================================================================
+# DOCKER COMPOSE - ENVIRONNEMENT DÉVELOPPEMENT (DEV)
+# ==================================================================
+#
+# Description : Environnement développement avec MOCK DATA
+# Usage       : docker-compose -f docker-compose.dev.yml up -d
+# Données     : Mock data léger (50 publications, 30 auteurs)
+# Ports       : 5173 (frontend), 8000 (backend), 5432 (postgres)
+#
+# ==================================================================
+
+services:
+  # ==================================================================
+  # POSTGRESQL - Base de données
+  # ==================================================================
+  postgres:
+    image: postgres:15.5
+    container_name: deeo-postgres-dev
+    environment:
+      POSTGRES_USER: deeo_user
+      POSTGRES_PASSWORD: deeo_password_dev
+      POSTGRES_DB: deeo_ai_dev
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      # - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql  # Désactivé (fichier manquant)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deeo_user -d deeo_ai_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deeo-network-dev
+
+  # ==================================================================
+  # REDIS - Cache et queues
+  # ==================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: deeo-redis-dev
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deeo-network-dev
+
+  # ==================================================================
+  # FASTAPI BACKEND - API
+  # ==================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: deeo-api-dev
+    environment:
+      # Environment
+      ENV: development
+      DEBUG: "true"
+      
+      # Database
+      DATABASE_URL: postgresql+asyncpg://deeo_user:deeo_password_dev@postgres:5432/deeo_ai_dev
+      DATABASE_ECHO: "true"
+      
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+      
+      # Mock Data Flag
+      USE_MOCK_DATA: "true"
+      MOCK_DATA_SIZE: "small"  # small=50 pubs, medium=200, large=1000
+      
+      # API
+      API_TITLE: "DEEO.AI API - Development"
+      API_VERSION: "0.4.0-dev"
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      
+      # Logging
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - api_dev_cache:/root/.cache
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - deeo-network-dev
+    restart: unless-stopped
+
+  # ==================================================================
+  # REACT FRONTEND - Interface utilisateur
+  # ==================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: deeo-frontend-dev
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_API_PROXY_TARGET: http://api:8000
+      VITE_ENV: development
+      NODE_ENV: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - frontend_dev_cache:/app/.vite
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - api
+    networks:
+      - deeo-network-dev
+    restart: unless-stopped
+
+  # ==================================================================
+  # PGADMIN - Interface PostgreSQL (optionnel)
+  # ==================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: deeo-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@deeo.ai
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_dev_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - deeo-network-dev
+    restart: unless-stopped
+    profiles:
+      - tools  # Démarrer avec: docker-compose --profile tools up
+
+# ==================================================================
+# VOLUMES
+# ==================================================================
+volumes:
+  postgres_dev_data:
+    name: deeo_postgres_dev_data
+  redis_dev_data:
+    name: deeo_redis_dev_data
+  api_dev_cache:
+    name: deeo_api_dev_cache
+  frontend_dev_cache:
+    name: deeo_frontend_dev_cache
+  pgadmin_dev_data:
+    name: deeo_pgadmin_dev_data
+
+# ==================================================================
+# NETWORKS
+# ==================================================================
+networks:
+  deeo-network-dev:
+    name: deeo-network-dev
+    driver: bridge

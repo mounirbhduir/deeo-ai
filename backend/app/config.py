@@ -3,8 +3,9 @@ Configuration de l'application DEEO.AI
 
 Utilise Pydantic Settings pour gérer les variables d'environnement.
 """
-from typing import Optional
+from typing import Optional, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -41,8 +42,38 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
-    
+    CORS_ORIGINS: Union[str, list[str]] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
+
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """
+        Parse CORS_ORIGINS from string or list.
+
+        Accepts:
+        - JSON array: '["http://localhost:5173", "http://localhost:8000"]'
+        - CSV string: "http://localhost:5173,http://localhost:8000"
+        - Python list: ["http://localhost:5173", "http://localhost:8000"]
+
+        Returns:
+        - list[str]: Parsed list of origins
+        """
+        if isinstance(v, str):
+            # Try JSON parsing first
+            import json
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+            # Fallback to CSV parsing
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+
+        # Already a list
+        return v
+
     # Pagination
     DEFAULT_PAGE_SIZE: int = 100
     MAX_PAGE_SIZE: int = 1000

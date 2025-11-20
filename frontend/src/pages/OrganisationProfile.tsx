@@ -52,21 +52,21 @@ export const OrganisationProfile = () => {
     },
     {
       id: 'researchers',
-      label: `Researchers (${organisation.authors.length})`,
+      label: `Researchers (${organisation.authors?.length || 0})`,
       content: (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Research Team</h3>
-          <OrganisationAuthors authors={organisation.authors} />
+          <OrganisationAuthors authors={organisation.authors || []} />
         </div>
       )
     },
     {
       id: 'publications',
-      label: `Publications (${organisation.publications.length})`,
+      label: `Publications (${organisation.publications?.length || 0})`,
       content: (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Research Publications</h3>
-          <OrganisationPublications publications={organisation.publications} />
+          <OrganisationPublications publications={organisation.publications || []} />
         </div>
       )
     },

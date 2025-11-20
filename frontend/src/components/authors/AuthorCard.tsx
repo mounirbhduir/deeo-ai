@@ -19,7 +19,7 @@ interface AuthorCardProps {
 
 export const AuthorCard = ({ author }: AuthorCardProps) => {
   const fullName = `${author.prenom} ${author.nom}`
-  const currentAffiliations = author.affiliations.filter(
+  const currentAffiliations = (author.affiliations || []).filter(
     (aff) => !aff.date_fin
   )
 
@@ -54,7 +54,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
                 <Award className="w-4 h-4" />
               </div>
               <div className="text-xl font-bold text-gray-900">
-                {author.h_index}
+                {author.h_index || 0}
               </div>
               <div className="text-xs text-gray-500">h-index</div>
             </div>
@@ -64,7 +64,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
                 <BookOpen className="w-4 h-4" />
               </div>
               <div className="text-xl font-bold text-gray-900">
-                {author.nombre_publications}
+                {author.nombre_publications || 0}
               </div>
               <div className="text-xs text-gray-500">Papers</div>
             </div>
@@ -74,7 +74,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
                 <Quote className="w-4 h-4" />
               </div>
               <div className="text-xl font-bold text-gray-900">
-                {author.nombre_citations.toLocaleString()}
+                {(author.nombre_citations || 0).toLocaleString()}
               </div>
               <div className="text-xs text-gray-500">Citations</div>
             </div>
