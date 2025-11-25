@@ -110,6 +110,7 @@ export const GraphsPage = () => {
                       { value: '4', label: '4+ collaborations' },
                       { value: '5', label: '5+ collaborations' },
                     ]}
+                    aria-label="Filtrer par nombre minimal de collaborations"
                   />
                 </div>
               </div>

@@ -1,0 +1,40 @@
+# ==================================================================
+# DOCKERFILE - FRONTEND REACT (DEVELOPMENT)
+# ==================================================================
+#
+# Description : Image Docker pour frontend React en mode développement
+# Usage       : docker build -t deeo-frontend-dev -f frontend/Dockerfile.dev frontend/
+#
+# ==================================================================
+
+FROM node:20-alpine
+
+# Métadonnées
+LABEL maintainer="Mounir <mounir@deeo.ai>"
+LABEL description="DEEO.AI Frontend - React Development"
+LABEL version="0.4.0"
+
+# Installer dépendances système
+RUN apk add --no-cache git
+
+# Créer répertoire application
+WORKDIR /app
+
+# Copier package.json et package-lock.json
+COPY package*.json ./
+
+# Installer dépendances
+RUN npm install
+
+# Copier code application
+COPY . .
+
+# Exposer port Vite
+EXPOSE 5173
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1
+
+# Commande par défaut (dev server avec hot reload)
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

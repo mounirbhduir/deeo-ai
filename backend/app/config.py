@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     # API
     API_V1_PREFIX: str = "/api/v1"
     
-    # CORS
-    CORS_ORIGINS: Union[str, list[str]] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
+    # CORS - Include port 5174 for staging frontend
+    CORS_ORIGINS: Union[str, list[str]] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:8000"]
 
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod

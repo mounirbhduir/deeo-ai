@@ -3,6 +3,8 @@
  *
  * Compact author card for displaying in lists/grids.
  * Shows avatar, name, h-index, publications, citations, and affiliations.
+ *
+ * PHASE A: Added safe data handling for h-index and citations
  */
 
 import { Link } from 'react-router-dom'
@@ -12,19 +14,24 @@ import { Badge } from '@/components/common/Badge'
 import { Avatar } from '@/components/common/Avatar'
 import { getInitials } from '@/utils/stringUtils'
 import type { AuthorListItem } from '@/types/author'
+import { displayHIndex, displayCitations, hasData } from '@/utils/dataHelpers'
 
 interface AuthorCardProps {
   author: AuthorListItem
 }
 
 export const AuthorCard = ({ author }: AuthorCardProps) => {
-  const fullName = `${author.prenom} ${author.nom}`
-  const currentAffiliations = (author.affiliations || []).filter(
-    (aff) => !aff.date_fin
-  )
+  // DEFENSIVE: Handle potentially undefined fields
+  const prenom = author?.prenom || ''
+  const nom = author?.nom || 'Inconnu'
+  const fullName = prenom ? `${prenom} ${nom}` : nom
+
+  // DEFENSIVE: affiliations may not exist in list response (only in detail)
+  const affiliations = author?.affiliations || []
+  const currentAffiliations = affiliations.filter((aff) => aff && !aff.date_fin)
 
   return (
-    <Link to={`/authors/${author.id}`}>
+    <Link to={`/authors/${author?.id ?? ''}`}>
       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
         <div className="flex flex-col gap-4">
           {/* Header: Avatar + Name */}
@@ -39,7 +46,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
               <h3 className="text-lg font-semibold text-gray-900 truncate">
                 {fullName}
               </h3>
-              {currentAffiliations.length > 0 && (
+              {currentAffiliations.length > 0 && currentAffiliations[0]?.organisation?.nom && (
                 <p className="text-sm text-gray-600 truncate">
                   {currentAffiliations[0].organisation.nom}
                 </p>
@@ -53,8 +60,8 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
               <div className="flex items-center gap-1 text-gray-500 mb-1">
                 <Award className="w-4 h-4" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
-                {author.h_index || 0}
+              <div className="text-lg font-bold text-gray-900">
+                {displayHIndex(author?.h_index)}
               </div>
               <div className="text-xs text-gray-500">h-index</div>
             </div>
@@ -64,7 +71,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
                 <BookOpen className="w-4 h-4" />
               </div>
               <div className="text-xl font-bold text-gray-900">
-                {author.nombre_publications || 0}
+                {author?.nombre_publications ?? 0}
               </div>
               <div className="text-xs text-gray-500">Papers</div>
             </div>
@@ -73,24 +80,26 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
               <div className="flex items-center gap-1 text-gray-500 mb-1">
                 <Quote className="w-4 h-4" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
-                {(author.nombre_citations || 0).toLocaleString()}
+              <div className="text-lg font-bold text-gray-900">
+                {displayCitations(author?.nombre_citations)}
               </div>
               <div className="text-xs text-gray-500">Citations</div>
             </div>
           </div>
 
-          {/* Affiliations Badges */}
+          {/* Affiliations Badges - DEFENSIVE: Only show if data exists and is valid */}
           {currentAffiliations.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {currentAffiliations.slice(0, 2).map((aff, idx) => (
-                <Badge
-                  key={idx}
-                  variant={aff.organisation.type === 'academic' ? 'primary' : 'info'}
-                  size="sm"
-                >
-                  {aff.poste || aff.organisation.type}
-                </Badge>
+                aff?.organisation?.type && (
+                  <Badge
+                    key={idx}
+                    variant={aff.organisation.type === 'academic' ? 'primary' : 'info'}
+                    size="sm"
+                  >
+                    {aff?.poste || aff.organisation.type}
+                  </Badge>
+                )
               ))}
               {currentAffiliations.length > 2 && (
                 <Badge variant="default" size="sm">

@@ -11,6 +11,23 @@ export const OrganisationsList = () => {
   const { data, isLoading, isError, error, queryParams, updateSearch } = useOrganisationsSearch()
   const [localSearch, setLocalSearch] = useState(queryParams.search || '')
 
+  // BUGFIX: Handle case where API returns array instead of paginated response
+  // Backend returns List[OrganisationResponse] instead of paginated structure
+  const normalizedData = (() => {
+    if (!data) return null
+    if (Array.isArray(data)) {
+      return { items: data, total: data.length, page: 1, limit: data.length, total_pages: 1 }
+    }
+    // If data is already paginated response, ensure items exists
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      page: data.page || 1,
+      limit: data.limit || 20,
+      total_pages: data.total_pages || 0
+    }
+  })()
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     updateSearch({ search: localSearch, page: 1 })
@@ -80,6 +97,7 @@ export const OrganisationsList = () => {
                     { value: 'research_center', label: 'Centre de recherche' },
                     { value: 'think_tank', label: 'Think Tank' }
                   ]}
+                  aria-label="Filtrer par type d'organisation"
                 />
               </div>
 
@@ -99,6 +117,7 @@ export const OrganisationsList = () => {
                     { value: 'Israel', label: 'Israël' },
                     { value: 'China', label: 'Chine' }
                   ]}
+                  aria-label="Filtrer par pays"
                 />
               </div>
 
@@ -113,6 +132,7 @@ export const OrganisationsList = () => {
                     { value: 'chercheurs', label: 'Chercheurs' },
                     { value: 'ranking', label: 'Classement mondial' }
                   ]}
+                  aria-label="Trier les organisations par critère"
                 />
               </div>
 
@@ -125,6 +145,7 @@ export const OrganisationsList = () => {
                     { value: 'asc', label: 'Croissant' },
                     { value: 'desc', label: 'Décroissant' }
                   ]}
+                  aria-label="Ordre de tri"
                 />
               </div>
             </div>
@@ -144,30 +165,30 @@ export const OrganisationsList = () => {
           </div>
         )}
 
-        {data && (
+        {normalizedData && (
           <>
             <div className="mb-4 text-sm text-gray-600">
-              Affichage de {data.items.length} sur {data.total} organisations
+              Affichage de {normalizedData.items.length} sur {normalizedData.total} organisations
             </div>
 
-            {data.items.length === 0 ? (
+            {normalizedData.items.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune organisation trouvée</h3>
-                <p className="text-gray-500">Essayez d'ajuster vos critères de recherche</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune organisation disponible</h3>
+                <p className="text-gray-500">Les organisations seront disponibles après enrichissement des données avec Semantic Scholar.</p>
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {data.items.map((org) => (
+                  {normalizedData.items.map((org) => (
                     <OrganisationCard key={org.id} organisation={org} />
                   ))}
                 </div>
 
-                {data.total_pages > 1 && (
+                {normalizedData.total_pages > 1 && (
                   <Pagination
-                    currentPage={data.page}
-                    totalPages={data.total_pages}
+                    currentPage={normalizedData.page}
+                    totalPages={normalizedData.total_pages}
                     onPageChange={handlePageChange}
                   />
                 )}

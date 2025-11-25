@@ -1,0 +1,84 @@
+# ==================================================================
+# DOCKERFILE - BACKEND FASTAPI (PRODUCTION)
+# ==================================================================
+#
+# Description : Image Docker optimisée pour production
+# Usage       : docker build -t deeo-api-prod -f backend/Dockerfile.prod backend/
+#
+# ==================================================================
+
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+# Variables environnement
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Installer dépendances build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Créer virtualenv
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copier requirements
+COPY requirements.txt .
+
+# Installer dépendances Python
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+# Métadonnées
+LABEL maintainer="Mounir <mounir@deeo.ai>"
+LABEL description="DEEO.AI Backend API - Production"
+LABEL version="0.4.0"
+
+# Variables environnement
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+# Installer dépendances runtime uniquement
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Créer user non-root
+RUN useradd -m -u 1000 deeo && \
+    mkdir -p /app /app/logs && \
+    chown -R deeo:deeo /app
+
+# Copier virtualenv depuis builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Workdir
+WORKDIR /app
+
+# Copier code
+COPY --chown=deeo:deeo . .
+
+# Switch to non-root user
+USER deeo
+
+# Exposer port
+EXPOSE 8000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Commande production avec Gunicorn
+CMD ["gunicorn", "app.main:app", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--keepalive", "5", \
+     "--log-level", "info"]

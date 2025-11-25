@@ -32,7 +32,7 @@ export function Sidebar({ collapsed: initialCollapsed = false }: SidebarProps) {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col bg-gray-50 border-r border-gray-200 transition-all duration-300 ${
+      className={`hidden lg:flex flex-col bg-gray-50 border-r border-gray-200 transition-all duration-300 sticky top-0 h-screen overflow-y-auto ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >

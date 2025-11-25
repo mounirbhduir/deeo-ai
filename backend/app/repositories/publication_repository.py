@@ -283,3 +283,32 @@ class PublicationRepository(BaseRepository[Publication]):
         )
         result = await self.db.execute(stmt)
         return result.scalar_one()
+
+    async def get_multi_with_relations(
+        self,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[Publication]:
+        """
+        Récupère les publications avec leurs auteurs et thèmes (eager loading).
+
+        Args:
+            skip: Nombre d'enregistrements à sauter
+            limit: Nombre maximum de résultats
+
+        Returns:
+            Liste des publications avec relations chargées
+        """
+        from app.models import PublicationAuteur, PublicationTheme
+        stmt = (
+            select(Publication)
+            .options(
+                selectinload(Publication.auteurs).selectinload(PublicationAuteur.auteur),
+                selectinload(Publication.themes).selectinload(PublicationTheme.theme)
+            )
+            .order_by(desc(Publication.date_publication))
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())

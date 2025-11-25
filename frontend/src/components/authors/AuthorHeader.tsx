@@ -1,5 +1,7 @@
 /**
  * AuthorHeader Component (Phase 4 - Step 6)
+ *
+ * PHASE A: Added safe data handling for affiliations
  */
 
 import { ExternalLink, Mail, Globe } from 'lucide-react'
@@ -7,6 +9,7 @@ import { Avatar } from '@/components/common/Avatar'
 import { Badge } from '@/components/common/Badge'
 import { getInitials } from '@/utils/stringUtils'
 import type { AuthorProfile } from '@/types/author'
+import { hasData } from '@/utils/dataHelpers'
 
 interface AuthorHeaderProps {
   author: AuthorProfile
@@ -14,7 +17,9 @@ interface AuthorHeaderProps {
 
 export const AuthorHeader = ({ author }: AuthorHeaderProps) => {
   const fullName = `${author.prenom} ${author.nom}`
-  const currentAffiliations = author.affiliations.filter((aff) => !aff.date_fin)
+  const currentAffiliations = hasData(author.affiliations)
+    ? author.affiliations.filter((aff) => !aff.date_fin)
+    : []
 
   return (
     <div className="bg-white border-b border-gray-200">

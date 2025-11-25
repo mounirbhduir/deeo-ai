@@ -22,17 +22,24 @@ import type {
 export const getAuthors = async (
   params: AuthorSearchParams = {}
 ): Promise<AuthorSearchResponse> => {
-  // Build query string from params, excluding undefined/null/empty values
-  const queryParams = new URLSearchParams()
+  const page = params.page || 1
+  const limit = params.limit || 20
+  const skip = (page - 1) * limit
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      queryParams.append(key, String(value))
-    }
-  })
+  // Build query parameters
+  const queryParams: Record<string, any> = {
+    skip,
+    limit,
+  }
 
+  if (params.search) queryParams.search = params.search
+  if (params.sort_by) queryParams.sort_by = params.sort_by
+  if (params.order) queryParams.order = params.order
+
+  // Backend now returns paginated response
   const { data } = await apiClient.get<AuthorSearchResponse>(
-    `/authors?${queryParams.toString()}`
+    `/auteurs/`,
+    { params: queryParams }
   )
 
   return data
@@ -44,7 +51,7 @@ export const getAuthors = async (
  * @returns Promise with complete author profile (includes publications, stats, co-authors)
  */
 export const getAuthorById = async (id: string): Promise<AuthorProfile> => {
-  const { data } = await apiClient.get<AuthorProfile>(`/authors/${id}`)
+  const { data } = await apiClient.get<AuthorProfile>(`/auteurs/${id}`)
   return data
 }
 
@@ -68,7 +75,7 @@ export const getAuthorPublications = async (
   })
 
   const { data } = await apiClient.get<AuthorPublicationsResponse>(
-    `/authors/${id}/publications?${queryParams.toString()}`
+    `/auteurs/${id}/publications?${queryParams.toString()}`
   )
 
   return data
@@ -85,7 +92,7 @@ export const getAuthorCoAuthors = async (
   limit: number = 10
 ): Promise<CoAuthor[]> => {
   const { data } = await apiClient.get<CoAuthor[]>(
-    `/authors/${id}/coauthors?limit=${limit}`
+    `/auteurs/${id}/coauthors?limit=${limit}`
   )
 
   return data

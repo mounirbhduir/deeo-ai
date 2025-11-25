@@ -3,11 +3,14 @@
  *
  * Displays key author metrics in 4 stat cards.
  * Publications, Citations, h-index, and Collaborations count.
+ *
+ * PHASE A: Added safe data handling for incomplete arXiv data
  */
 
 import { BookOpen, Quote, Award, Users } from 'lucide-react'
 import { Card } from '@/components/common/Card'
 import type { AuthorProfile } from '@/types/author'
+import { displayHIndex, displayCitations, hasData } from '@/utils/dataHelpers'
 
 interface AuthorStatsProps {
   author: AuthorProfile
@@ -17,28 +20,28 @@ export const AuthorStats = ({ author }: AuthorStatsProps) => {
   const stats = [
     {
       label: 'Publications',
-      value: author.nombre_publications,
+      value: author.nombre_publications || 0,
       icon: BookOpen,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
     },
     {
       label: 'Citations',
-      value: author.nombre_citations.toLocaleString(),
+      value: displayCitations(author.nombre_citations),
       icon: Quote,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
     {
       label: 'h-index',
-      value: author.h_index,
+      value: displayHIndex(author.h_index),
       icon: Award,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
     },
     {
       label: 'Collaborations',
-      value: author.coauthors.length,
+      value: hasData(author.coauthors) ? author.coauthors.length : 0,
       icon: Users,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',

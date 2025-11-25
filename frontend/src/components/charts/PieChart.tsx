@@ -47,15 +47,17 @@ export function PieChart({
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={height}>
-          <RechartsPieChart>
+          <RechartsPieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              labelLine={false}
-              label={({ name, percent }) =>
-                `${name}: ${(percent * 100).toFixed(0)}%`
-              }
+              labelLine={true}
+              label={({ name, percent }) => {
+                // Truncate long names to prevent overlap
+                const displayName = name.length > 20 ? `${name.substring(0, 17)}...` : name
+                return `${displayName}: ${(percent * 100).toFixed(0)}%`
+              }}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"

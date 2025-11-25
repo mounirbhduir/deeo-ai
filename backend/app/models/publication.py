@@ -6,6 +6,7 @@ Publications scientifiques (hub central du système DEEO.AI)
 from sqlalchemy import Column, String, Text, Date, Integer, Numeric, CheckConstraint, ForeignKey, Index, Enum
 from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from .base import Base, UUIDMixin, TimestampMixin
 from .enums import TypePublicationEnum, StatusPublicationEnum
@@ -140,11 +141,22 @@ class Publication(Base, UUIDMixin, TimestampMixin):
         back_populates="publications",
         lazy="select"
     )
+
+    # Association object relationship (for when we need ordre, role)
     auteurs = relationship(
         "PublicationAuteur",
         back_populates="publication",
-        lazy="select"
+        lazy="select",
+        order_by="PublicationAuteur.ordre"
     )
+
+    # Direct many-to-many access to Auteur objects (bypassing association)
+    auteurs_list = association_proxy(
+        "auteurs",
+        "auteur",
+        creator=lambda aut: __import__('app.models.publication_auteur', fromlist=['PublicationAuteur']).PublicationAuteur(auteur=aut)
+    )
+
     themes = relationship(
         "PublicationTheme",
         back_populates="publication",

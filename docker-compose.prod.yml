@@ -1,0 +1,276 @@
+# ==================================================================
+# DOCKER COMPOSE - ENVIRONNEMENT PRODUCTION (DEMO)
+# ==================================================================
+#
+# Description : Environnement production optimisé pour démo soutenance
+# Usage       : docker-compose -f docker-compose.prod.yml up -d
+# Données     : Identiques à STAGING (données réelles)
+# Ports       : 80/443 (frontend+api via nginx), 5432 (postgres interne)
+#
+# ==================================================================
+
+version: '3.8'
+
+services:
+  # ==================================================================
+  # POSTGRESQL - Base de données
+  # ==================================================================
+  postgres:
+    image: postgres:15.5
+    container_name: deeo-postgres-prod
+    environment:
+      POSTGRES_USER: deeo_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Depuis .env.prod
+      POSTGRES_DB: deeo_ai
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    # PAS de port exposé (sécurité - accès interne uniquement)
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deeo_user -d deeo_ai"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - deeo-network-prod
+    # Configuration optimisée production
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=2GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=8MB
+      -c min_wal_size=2GB
+      -c max_wal_size=8GB
+      -c max_connections=100
+    restart: always
+
+  # ==================================================================
+  # REDIS - Cache et queues
+  # ==================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: deeo-redis-prod
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    # PAS de port exposé (sécurité)
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - deeo-network-prod
+    restart: always
+
+  # ==================================================================
+  # FASTAPI BACKEND - API
+  # ==================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: deeo-api-prod
+    environment:
+      # Environment
+      ENV: production
+      DEBUG: "false"
+      
+      # Database
+      DATABASE_URL: postgresql+asyncpg://deeo_user:${POSTGRES_PASSWORD}@postgres:5432/deeo_ai
+      DATABASE_ECHO: "false"
+      DATABASE_POOL_SIZE: 30
+      DATABASE_MAX_OVERFLOW: 20
+      
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      REDIS_CACHE_TTL: 3600
+      
+      # Mock Data
+      USE_MOCK_DATA: "false"
+      
+      # API
+      API_TITLE: "DEEO.AI API"
+      API_VERSION: "0.4.0"
+      CORS_ORIGINS: "${ALLOWED_ORIGINS}"  # Depuis .env.prod
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY}
+      
+      # Logging
+      LOG_LEVEL: WARNING
+    # PAS de port exposé directement (via nginx)
+    volumes:
+      - api_prod_logs:/app/logs
+    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - deeo-network-prod
+    restart: always
+    # Limites ressources
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # ==================================================================
+  # REACT FRONTEND - Build production
+  # ==================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${API_URL}  # URL publique API
+    container_name: deeo-frontend-prod
+    # Build uniquement, nginx servira les fichiers statiques
+    networks:
+      - deeo-network-prod
+
+  # ==================================================================
+  # NGINX - Reverse Proxy & Static Files
+  # ==================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: deeo-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - frontend_prod_build:/usr/share/nginx/html:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx_prod_logs:/var/log/nginx
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - deeo-network-prod
+    restart: always
+
+  # ==================================================================
+  # CERTBOT - SSL/TLS Certificates (Let's Encrypt)
+  # ==================================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: deeo-certbot-prod
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - deeo-network-prod
+    profiles:
+      - ssl  # Démarrer avec: docker-compose --profile ssl up
+
+  # ==================================================================
+  # SCHEDULER - Jobs asynchrones (Phase 3)
+  # ==================================================================
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: deeo-scheduler-prod
+    environment:
+      ENV: production
+      DATABASE_URL: postgresql+asyncpg://deeo_user:${POSTGRES_PASSWORD}@postgres:5432/deeo_ai
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      
+      # Scheduler config
+      ARXIV_COLLECTION_CRON: "0 2 * * *"
+      ENRICHMENT_CRON: "0 */6 * * *"
+      CLASSIFICATION_CRON: "0 4 * * *"
+      
+      LOG_LEVEL: INFO
+    command: python -m app.scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - deeo-network-prod
+    restart: always
+    profiles:
+      - scheduler
+
+  # ==================================================================
+  # MONITORING - Prometheus + Grafana (optionnel)
+  # ==================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: deeo-prometheus-prod
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_prod_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - deeo-network-prod
+    restart: always
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: deeo-grafana-prod
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_prod_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - deeo-network-prod
+    restart: always
+    profiles:
+      - monitoring
+
+# ==================================================================
+# VOLUMES
+# ==================================================================
+volumes:
+  postgres_prod_data:
+    name: deeo_postgres_prod_data
+  redis_prod_data:
+    name: deeo_redis_prod_data
+  api_prod_logs:
+    name: deeo_api_prod_logs
+  nginx_prod_logs:
+    name: deeo_nginx_prod_logs
+  frontend_prod_build:
+    name: deeo_frontend_prod_build
+  prometheus_prod_data:
+    name: deeo_prometheus_prod_data
+  grafana_prod_data:
+    name: deeo_grafana_prod_data
+
+# ==================================================================
+# NETWORKS
+# ==================================================================
+networks:
+  deeo-network-prod:
+    name: deeo-network-prod
+    driver: bridge

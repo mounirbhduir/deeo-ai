@@ -22,7 +22,7 @@ export default function Dashboard() {
     queryKey: ['publications-dashboard'],
     queryFn: () => publicationsApi.search({
       page: 1,
-      limit: 100,  // Fetch enough for charts
+      limit: 500,  // Fetch all publications for accurate dashboard statistics
       sort_by: 'date',
       sort_order: 'desc'
     }),
@@ -53,13 +53,20 @@ export default function Dashboard() {
   const totalThemes = themes?.length || 0
 
   // Calculate recent publications (last 7 days)
+  // DEFENSIVE: Handle invalid dates gracefully
   const publicationsLast7Days = useMemo(() => {
-    if (!publicationsData?.items) return 0
+    if (!publicationsData?.items || !Array.isArray(publicationsData.items)) return 0
     const now = new Date()
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     return publicationsData.items.filter((pub) => {
-      const pubDate = new Date(pub.date_publication)
-      return pubDate >= sevenDaysAgo
+      // DEFENSIVE: Check if date is valid before comparing
+      if (!pub?.date_publication) return false
+      try {
+        const pubDate = new Date(pub.date_publication)
+        return !isNaN(pubDate.getTime()) && pubDate >= sevenDaysAgo
+      } catch {
+        return false
+      }
     }).length
   }, [publicationsData])
 
@@ -114,6 +121,10 @@ export default function Dashboard() {
     return prepareAreaChartData(publicationsData?.items || [])
   }, [publicationsData])
 
+  // DEFENSIVE: Show error state if all API calls fail
+  const hasError = !pubsLoading && !auteursLoading && !themesLoading &&
+    !publicationsData && !auteursData && !themes
+
   return (
     <div>
       <Breadcrumb />
@@ -127,10 +138,17 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* KPIs Grid */}
+        {/* DEFENSIVE: Show error alert if all data failed to load */}
+        {hasError && (
+          <Alert variant="error">
+            Impossible de charger les données du tableau de bord. Veuillez réessayer plus tard.
+          </Alert>
+        )}
+
+        {/* KPIs Grid - Always show, even with empty data */}
         <StatsGrid kpis={kpis} isLoading={pubsLoading || auteursLoading} />
 
-        {/* Charts Grid */}
+        {/* Charts Grid - Always show, charts handle empty states internally */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <LineChart
             title="Évolution Publications (12 derniers mois)"
@@ -162,6 +180,7 @@ export default function Dashboard() {
 
 /**
  * Prepare data for Line Chart (publications by month - last 12 months)
+ * DEFENSIVE: Handle invalid/missing dates gracefully
  */
 function prepareLineChartData(publications: PublicationDetailed[]) {
   const now = new Date()
@@ -174,12 +193,21 @@ function prepareLineChartData(publications: PublicationDetailed[]) {
     monthsMap.set(monthKey, 0)
   }
 
+  // DEFENSIVE: Filter out publications with invalid dates
+  const validPublications = (publications ?? []).filter(
+    (pub) => pub?.date_publication && !isNaN(new Date(pub.date_publication).getTime())
+  )
+
   // Count publications per month
-  publications.forEach((pub) => {
-    const pubDate = new Date(pub.date_publication)
-    const monthKey = pubDate.toLocaleString('fr-FR', { month: 'short', year: 'numeric' })
-    if (monthsMap.has(monthKey)) {
-      monthsMap.set(monthKey, (monthsMap.get(monthKey) || 0) + 1)
+  validPublications.forEach((pub) => {
+    try {
+      const pubDate = new Date(pub.date_publication)
+      const monthKey = pubDate.toLocaleString('fr-FR', { month: 'short', year: 'numeric' })
+      if (monthsMap.has(monthKey)) {
+        monthsMap.set(monthKey, (monthsMap.get(monthKey) || 0) + 1)
+      }
+    } catch (error) {
+      // Skip publications with date parsing errors
     }
   })
 
@@ -191,26 +219,35 @@ function prepareLineChartData(publications: PublicationDetailed[]) {
 
 /**
  * Prepare data for Bar Chart (top authors by h-index)
+ * DEFENSIVE: Handle null/undefined/missing author data
  */
 function prepareBarChartData(auteurs: AuthorListItem[]) {
-  return auteurs.slice(0, 10).map((auteur) => ({
-    name: `${auteur.prenom} ${auteur.nom}`.substring(0, 20),
-    value: auteur.h_index,
+  // DEFENSIVE: Ensure auteurs is an array
+  const validAuteurs = Array.isArray(auteurs) ? auteurs : []
+
+  return validAuteurs.slice(0, 10).map((auteur) => ({
+    name: `${auteur?.prenom ?? ''} ${auteur?.nom ?? 'Inconnu'}`.trim().substring(0, 20),
+    value: auteur?.h_index ?? 0,
   }))
 }
 
 /**
  * Prepare data for Pie Chart (top themes by publication count)
+ * DEFENSIVE: Handle null/undefined/missing theme data
  */
 function preparePieChartData(themes: Theme[]) {
-  return themes.slice(0, 5).map((theme) => ({
-    name: theme.label.substring(0, 30),
-    value: theme.nombre_publications,
+  // DEFENSIVE: Ensure themes is an array
+  const validThemes = Array.isArray(themes) ? themes : []
+
+  return validThemes.slice(0, 5).map((theme) => ({
+    name: (theme?.label ?? 'Sans thème').substring(0, 30),
+    value: theme?.nombre_publications ?? 0,
   }))
 }
 
 /**
  * Prepare data for Area Chart (temporal trends - last 6 months)
+ * DEFENSIVE: Handle invalid/missing dates gracefully
  */
 function prepareAreaChartData(publications: PublicationDetailed[]) {
   const now = new Date()
@@ -223,18 +260,27 @@ function prepareAreaChartData(publications: PublicationDetailed[]) {
     monthsMap.set(monthKey, 0)
   }
 
-  // Count publications per month
-  publications.forEach((pub) => {
-    const pubDate = new Date(pub.date_publication)
-    const diffMonths =
-      (now.getFullYear() - pubDate.getFullYear()) * 12 +
-      (now.getMonth() - pubDate.getMonth())
+  // DEFENSIVE: Filter out publications with invalid dates
+  const validPublications = (publications ?? []).filter(
+    (pub) => pub?.date_publication && !isNaN(new Date(pub.date_publication).getTime())
+  )
 
-    if (diffMonths >= 0 && diffMonths <= 5) {
-      const monthKey = pubDate.toLocaleString('fr-FR', { month: 'short' })
-      if (monthsMap.has(monthKey)) {
-        monthsMap.set(monthKey, (monthsMap.get(monthKey) || 0) + 1)
+  // Count publications per month
+  validPublications.forEach((pub) => {
+    try {
+      const pubDate = new Date(pub.date_publication)
+      const diffMonths =
+        (now.getFullYear() - pubDate.getFullYear()) * 12 +
+        (now.getMonth() - pubDate.getMonth())
+
+      if (diffMonths >= 0 && diffMonths <= 5) {
+        const monthKey = pubDate.toLocaleString('fr-FR', { month: 'short' })
+        if (monthsMap.has(monthKey)) {
+          monthsMap.set(monthKey, (monthsMap.get(monthKey) || 0) + 1)
+        }
       }
+    } catch (error) {
+      // Skip publications with date parsing errors
     }
   })
 

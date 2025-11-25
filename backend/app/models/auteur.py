@@ -5,6 +5,7 @@ Auteurs/chercheurs en IA
 """
 from sqlalchemy import Column, String, Integer, CheckConstraint, Index
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from .base import Base, UUIDMixin, TimestampMixin
 
@@ -93,11 +94,21 @@ class Auteur(Base, UUIDMixin, TimestampMixin):
     )
     
     # Relations
+    # Association object relationship (for when we need ordre, role)
     publications = relationship(
         "PublicationAuteur",
         back_populates="auteur",
-        lazy="select"
+        lazy="select",
+        order_by="PublicationAuteur.ordre"
     )
+
+    # Direct many-to-many access to Publication objects (bypassing association)
+    publications_list = association_proxy(
+        "publications",
+        "publication",
+        creator=lambda pub: __import__('app.models.publication_auteur', fromlist=['PublicationAuteur']).PublicationAuteur(publication=pub)
+    )
+
     affiliations = relationship(
         "Affiliation",
         back_populates="auteur",

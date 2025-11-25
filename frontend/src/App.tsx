@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
 // Pages
 import Home from '@/pages/Home'
@@ -16,17 +17,22 @@ import NotFound from '@/pages/NotFound'
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Routes avec Layout */}
         <Route path="/" element={<Layout><Home /></Layout>} />
-        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+        <Route path="/dashboard" element={<Layout><ErrorBoundary><Dashboard /></ErrorBoundary></Layout>} />
         <Route
           path="/publications/search"
-          element={<Layout><PublicationsSearch /></Layout>}
+          element={<Layout><ErrorBoundary><PublicationsSearch /></ErrorBoundary></Layout>}
         />
-        <Route path="/authors" element={<Layout><AuthorsList /></Layout>} />
-        <Route path="/authors/:id" element={<Layout><AuthorProfile /></Layout>} />
+        <Route path="/authors" element={<Layout><ErrorBoundary><AuthorsList /></ErrorBoundary></Layout>} />
+        <Route path="/authors/:id" element={<Layout><ErrorBoundary><AuthorProfile /></ErrorBoundary></Layout>} />
         <Route path="/graphs" element={<Layout><GraphsPage /></Layout>} />
         <Route path="/components" element={<Layout><ComponentsDemo /></Layout>} />
 

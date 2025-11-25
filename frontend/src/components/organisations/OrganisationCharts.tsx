@@ -23,13 +23,15 @@ export const OrganisationCharts = ({ statistics }: { statistics: OrganisationSta
     return statistics.top_authors
       .slice(0, 10)
       .map(a => {
-        const fullName = `${a.prenom} ${a.nom}`
+        const prenom = a.prenom || ''
+        const nom = a.nom || 'Unknown'
+        const fullName = prenom ? `${prenom} ${nom}` : nom
         // Shorten name for X-axis display (first name initial + last name)
-        const displayName = `${a.prenom.charAt(0)}. ${a.nom}`
+        const displayName = prenom ? `${prenom.charAt(0)}. ${nom}` : nom
         return {
           name: displayName,
           fullName: fullName, // Keep full name for tooltip
-          h_index: a.h_index
+          h_index: a.h_index || 0
         }
       })
       .sort((a, b) => b.h_index - a.h_index) // Sort descending by h-index

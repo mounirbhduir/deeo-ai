@@ -2,6 +2,8 @@
  * PublicationModal Component (Phase 4 - Step 5)
  *
  * Modal displaying detailed information about a publication.
+ *
+ * PHASE A: Added safe data handling for citations and author names
  */
 
 import { Modal } from '../common/Modal'
@@ -9,6 +11,7 @@ import { Badge } from '../common/Badge'
 import { Button } from '../common/Button'
 import { ExternalLink } from '../common/ExternalLink'
 import type { PublicationDetailed } from '@/types/publication'
+import { displayCitations, safePublicationAuteur } from '@/utils/dataHelpers'
 
 interface PublicationModalProps {
   publication: PublicationDetailed | null
@@ -31,6 +34,11 @@ export const PublicationModal = ({
     })
   }
 
+  const formatAuthorName = (author: any) => {
+    const safe = safePublicationAuteur(author)
+    return safe.prenom ? `${safe.prenom} ${safe.nom}` : safe.nom
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={publication.titre}>
       <div className="space-y-4">
@@ -51,7 +59,7 @@ export const PublicationModal = ({
           <div>
             <span className="font-medium text-gray-700">Citations:</span>
             <span className="ml-2 text-gray-600">
-              {publication.nombre_citations}
+              {displayCitations(publication.nombre_citations)}
             </span>
           </div>
         </div>
@@ -85,7 +93,7 @@ export const PublicationModal = ({
           <div className="flex flex-wrap gap-2">
             {publication.auteurs.map((auteur) => (
               <Badge key={auteur.id} variant="default">
-                {auteur.prenom} {auteur.nom}
+                {formatAuthorName(auteur)}
               </Badge>
             ))}
           </div>

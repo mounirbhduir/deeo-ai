@@ -1,0 +1,233 @@
+# ==================================================================
+# DOCKER COMPOSE - ENVIRONNEMENT STAGING (PRE-PRODUCTION)
+# ==================================================================
+#
+# Description : Environnement staging avec DONNÉES RÉELLES
+# Usage       : docker-compose -f docker-compose.staging.yml up -d
+# Données     : Données réelles (15,000+ publications arXiv)
+# Ports       : 5174 (frontend), 8001 (backend), 5433 (postgres)
+#
+# ==================================================================
+
+version: '3.8'
+
+services:
+  # ==================================================================
+  # POSTGRESQL - Base de données
+  # ==================================================================
+  postgres:
+    image: postgres:15.5
+    container_name: deeo-postgres-staging
+    environment:
+      POSTGRES_USER: deeo_user
+      POSTGRES_PASSWORD: deeo_password_staging
+      POSTGRES_DB: deeo_ai_staging
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      - "5433:5432"  # Port différent pour cohabiter avec DEV
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deeo_user -d deeo_ai_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deeo-network-staging
+    # Configuration optimisée pour données réelles
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  # ==================================================================
+  # REDIS - Cache et queues
+  # ==================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: deeo-redis-staging
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"  # Port différent
+    volumes:
+      - redis_staging_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deeo-network-staging
+
+  # ==================================================================
+  # FASTAPI BACKEND - API
+  # ==================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: deeo-api-staging
+    environment:
+      # Environment
+      ENV: staging
+      DEBUG: "false"
+      
+      # Database
+      DATABASE_URL: postgresql+asyncpg://deeo_user:deeo_password_staging@postgres:5432/deeo_ai_staging
+      DATABASE_ECHO: "false"
+      DATABASE_POOL_SIZE: 20
+      DATABASE_MAX_OVERFLOW: 10
+      
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: 3600  # 1 hour
+      
+      # Mock Data Flag
+      USE_MOCK_DATA: "false"  # DONNÉES RÉELLES
+      
+      # API
+      API_TITLE: "DEEO.AI API - Staging"
+      API_VERSION: "0.4.0-staging"
+      CORS_ORIGINS: "http://localhost:5174,http://127.0.0.1:5174"
+      
+      # Pipelines Phase 3
+      ARXIV_ENABLED: "true"
+      SEMANTIC_SCHOLAR_ENABLED: "true"
+      ML_CLASSIFIER_ENABLED: "true"
+      
+      # Semantic Scholar API
+      SEMANTIC_SCHOLAR_API_KEY: ""  # Optionnel
+      SEMANTIC_SCHOLAR_RATE_LIMIT: 100  # Requêtes/seconde
+      
+      # Logging
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8000"  # Port différent
+    volumes:
+      - ./backend:/app
+      - api_staging_cache:/root/.cache
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - deeo-network-staging
+    restart: unless-stopped
+    # Limites ressources
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # ==================================================================
+  # REACT FRONTEND - Interface utilisateur
+  # ==================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: deeo-frontend-staging
+    environment:
+      VITE_API_BASE_URL: http://localhost:8001/api/v1
+      VITE_API_PROXY_TARGET: http://api:8000  # Proxy interne Docker
+      VITE_ENV: staging
+      NODE_ENV: development
+    ports:
+      - "5174:5173"  # Port différent
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - frontend_staging_cache:/app/.vite
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - api
+    networks:
+      - deeo-network-staging
+    restart: unless-stopped
+
+  # ==================================================================
+  # SCHEDULER - Jobs asynchrones (Phase 3)
+  # ==================================================================
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: deeo-scheduler-staging
+    environment:
+      ENV: staging
+      DATABASE_URL: postgresql+asyncpg://deeo_user:deeo_password_staging@postgres:5432/deeo_ai_staging
+      REDIS_URL: redis://redis:6379/0
+      
+      # Scheduler config
+      ARXIV_COLLECTION_CRON: "0 2 * * *"  # Tous les jours à 2h
+      ENRICHMENT_CRON: "0 */6 * * *"      # Toutes les 6h
+      CLASSIFICATION_CRON: "0 4 * * *"    # Tous les jours à 4h
+    command: python -m app.scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - deeo-network-staging
+    restart: unless-stopped
+    profiles:
+      - scheduler  # Démarrer avec: docker-compose --profile scheduler up
+
+  # ==================================================================
+  # PGADMIN - Interface PostgreSQL (optionnel)
+  # ==================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: deeo-pgadmin-staging
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@deeo.ai
+      PGADMIN_DEFAULT_PASSWORD: admin_staging
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5051:80"  # Port différent
+    volumes:
+      - pgadmin_staging_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - deeo-network-staging
+    restart: unless-stopped
+    profiles:
+      - tools
+
+# ==================================================================
+# VOLUMES
+# ==================================================================
+volumes:
+  postgres_staging_data:
+    name: deeo_postgres_staging_data
+  redis_staging_data:
+    name: deeo_redis_staging_data
+  api_staging_cache:
+    name: deeo_api_staging_cache
+  frontend_staging_cache:
+    name: deeo_frontend_staging_cache
+  pgadmin_staging_data:
+    name: deeo_pgadmin_staging_data
+
+# ==================================================================
+# NETWORKS
+# ==================================================================
+networks:
+  deeo-network-staging:
+    name: deeo-network-staging
+    driver: bridge

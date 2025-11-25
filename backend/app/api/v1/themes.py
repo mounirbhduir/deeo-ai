@@ -206,22 +206,51 @@ MOCK_THEMES = [
 async def list_themes(
     skip: int = Query(0, ge=0, description='Number of records to skip'),
     limit: int = Query(100, ge=1, le=1000, description='Maximum number of records'),
+    db: AsyncSession = Depends(get_db)
 ) -> List[ThemeResponse]:
     '''
-    Retrieve a paginated list of themes.
-    Returns mock data for development.
+    Retrieve actual themes from publications (REAL DATA, not mock).
+    Returns themes that are actually linked to publications.
 
     Parameters:
     - **skip**: Number of records to skip (default: 0)
     - **limit**: Maximum number of records to return (default: 100, max: 1000)
 
     Returns:
-    - List of themes with pagination
+    - List of real themes used in publications
     '''
-    # Return mock themes with pagination
-    start = skip
-    end = skip + limit
-    return MOCK_THEMES[start:end]
+    from sqlalchemy import select, func
+    from app.models import Theme, PublicationTheme
+
+    # Get themes that are actually used in publications with pub count
+    stmt = (
+        select(Theme, func.count(PublicationTheme.publication_id).label('nombre_publications'))
+        .join(PublicationTheme, PublicationTheme.theme_id == Theme.id)
+        .group_by(Theme.id)
+        .order_by(func.count(PublicationTheme.publication_id).desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    themes_with_count = result.all()
+
+    # Convert to response format
+    themes = []
+    for theme, count in themes_with_count:
+        theme_dict = {
+            'id': str(theme.id),
+            'label': theme.label,
+            'description': theme.description,
+            'parent_id': str(theme.parent_id) if theme.parent_id else None,
+            'niveau_hierarchie': theme.niveau_hierarchie or 1,
+            'chemin_hierarchie': theme.chemin_hierarchie or theme.label,
+            'nombre_publications': count,
+            'created_at': theme.created_at.isoformat() if theme.created_at else None,
+            'updated_at': theme.updated_at.isoformat() if theme.updated_at else None,
+        }
+        themes.append(ThemeResponse.model_validate(theme_dict))
+
+    return themes
 
 
 # ============================================================================

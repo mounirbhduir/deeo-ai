@@ -10,6 +10,7 @@ from app.api.v1.organisations import router as organisations_router
 from app.api.v1.themes import router as themes_router
 from app.api.v1.datasets import router as datasets_router
 from app.api.v1.statistics import router as statistics_router
+from app.api.v1.graphs_mock import router as graphs_router
 
 __all__ = [
     'publications_router',
@@ -18,4 +19,5 @@ __all__ = [
     'themes_router',
     'datasets_router',
     'statistics_router',
+    'graphs_router',
 ]

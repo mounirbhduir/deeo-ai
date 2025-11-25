@@ -3,6 +3,8 @@
  *
  * Complete author profile page with tabbed interface.
  * Displays overview (stats + charts + collaborations), publications, and timeline.
+ *
+ * PHASE A: Added safe data handling for h-index and citations
  */
 
 import { useParams } from 'react-router-dom'
@@ -20,6 +22,7 @@ import { Skeleton } from '@/components/common/Skeleton'
 import { Alert } from '@/components/common/Alert'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { displayHIndex } from '@/utils/dataHelpers'
 
 export const AuthorProfile = () => {
   const { id } = useParams<{ id: string }>()
@@ -78,6 +81,13 @@ export const AuthorProfile = () => {
     )
   }
 
+  // DEFENSIVE: Provide safe default statistics if missing
+  const safeStatistics = author?.statistics || {
+    publications_by_year: {},
+    publications_by_theme: {},
+    citations_by_year: {},
+  }
+
   const tabs = [
     {
       id: 'overview',
@@ -88,7 +98,7 @@ export const AuthorProfile = () => {
           <AuthorStats author={author} />
 
           {/* Charts */}
-          <AuthorCharts statistics={author.statistics} />
+          <AuthorCharts statistics={safeStatistics} />
 
           {/* Collaborations */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -103,11 +113,11 @@ export const AuthorProfile = () => {
                     Average Citations per Paper
                   </div>
                   <div className="text-3xl font-bold text-indigo-600">
-                    {author.nombre_publications > 0
+                    {author.nombre_publications > 0 && author.nombre_citations
                       ? Math.round(
                           author.nombre_citations / author.nombre_publications
                         )
-                      : 0}
+                      : 'N/A'}
                   </div>
                 </div>
                 <div>
@@ -121,7 +131,7 @@ export const AuthorProfile = () => {
                 <div>
                   <div className="text-sm text-gray-600 mb-1">h-index</div>
                   <div className="text-3xl font-bold text-pink-600">
-                    {author.h_index}
+                    {displayHIndex(author.h_index)}
                   </div>
                 </div>
               </div>
@@ -133,7 +143,7 @@ export const AuthorProfile = () => {
     {
       id: 'publications',
       label: `Publications (${author.nombre_publications})`,
-      content: <AuthorPublications authorId={author.id} />,
+      content: <AuthorPublications publications={author.publications || []} />,
     },
     {
       id: 'timeline',

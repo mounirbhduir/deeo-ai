@@ -73,9 +73,10 @@ export interface AuthorProfile extends Author {
 
 /**
  * Author list item (used in search results)
+ * DEFENSIVE: affiliations are optional as backend may not return them in list endpoint
  */
 export interface AuthorListItem extends Author {
-  affiliations: AuthorAffiliation[];
+  affiliations?: AuthorAffiliation[];
 }
 
 /**
@@ -85,7 +86,7 @@ export interface AuthorSearchParams {
   page?: number;
   limit?: number;
   search?: string;
-  sort_by?: 'nom' | 'h_index' | 'citations';
+  sort_by?: 'nom' | 'h_index' | 'citations' | 'nombre_publications';
   order?: 'asc' | 'desc';
 }
 

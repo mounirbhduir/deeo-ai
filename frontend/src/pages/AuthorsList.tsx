@@ -55,13 +55,15 @@ export const AuthorsList = () => {
             value={queryParams.sort_by || 'nom'}
             onChange={(e) =>
               updateSearch({
-                sort_by: e.target.value as 'nom' | 'h_index' | 'citations',
+                sort_by: e.target.value as 'nom' | 'h_index' | 'citations' | 'nombre_publications',
               })
             }
+            aria-label="Trier les auteurs par critère"
           >
             <option value="nom">Trier par nom</option>
             <option value="h_index">Trier par indice h</option>
             <option value="citations">Trier par citations</option>
+            <option value="nombre_publications">Nombre de publications</option>
           </select>
 
           {/* Sort Order */}
@@ -71,6 +73,7 @@ export const AuthorsList = () => {
             onChange={(e) =>
               updateSearch({ order: e.target.value as 'asc' | 'desc' })
             }
+            aria-label="Ordre de tri"
           >
             <option value="asc">Croissant</option>
             <option value="desc">Décroissant</option>
@@ -106,6 +109,7 @@ export const AuthorsList = () => {
               onChange={(e) =>
                 updateSearch({ limit: parseInt(e.target.value), page: 1 })
               }
+              aria-label="Nombre d'auteurs par page"
             >
               <option value="12">12</option>
               <option value="24">24</option>

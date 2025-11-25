@@ -41,34 +41,40 @@ const COLORS = [
 
 export const AuthorCharts = ({ statistics }: AuthorChartsProps) => {
   // Transform publications by year for line chart
+  // DEFENSIVE: Handle undefined/null statistics.publications_by_year
   const publicationsByYearData = useMemo(() => {
-    return Object.entries(statistics.publications_by_year)
+    const data = statistics?.publications_by_year || {}
+    return Object.entries(data)
       .map(([year, count]) => ({
         year: parseInt(year),
         publications: count,
       }))
       .sort((a, b) => a.year - b.year)
-  }, [statistics.publications_by_year])
+  }, [statistics?.publications_by_year])
 
   // Transform publications by theme for pie chart
+  // DEFENSIVE: Handle undefined/null statistics.publications_by_theme
   const publicationsByThemeData = useMemo(() => {
-    return Object.entries(statistics.publications_by_theme)
+    const data = statistics?.publications_by_theme || {}
+    return Object.entries(data)
       .map(([theme, count]) => ({
         name: theme,
         value: count,
       }))
       .sort((a, b) => b.value - a.value)
-  }, [statistics.publications_by_theme])
+  }, [statistics?.publications_by_theme])
 
   // Transform citations by year for line chart
+  // DEFENSIVE: Handle undefined/null statistics.citations_by_year
   const citationsByYearData = useMemo(() => {
-    return Object.entries(statistics.citations_by_year)
+    const data = statistics?.citations_by_year || {}
+    return Object.entries(data)
       .map(([year, count]) => ({
         year: parseInt(year),
         citations: count,
       }))
       .sort((a, b) => a.year - b.year)
-  }, [statistics.citations_by_year])
+  }, [statistics?.citations_by_year])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
